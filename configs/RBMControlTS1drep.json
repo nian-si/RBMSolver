@@ -1,0 +1,49 @@
+{
+    "eqn_config": {
+        "_comment": "RBM Steady State",
+        "eqn_name": "thinStream",
+        "total_time_critic": 0.1,
+        "dim": 30,
+        "num_time_interval_critic": 64,
+        "discount": 0.0,
+        "mu": -1.0,
+        "R": 0.0,
+        "rho": 0.0,
+        "x0": 1.0,
+        "a": 10,
+	"alow":0.0,
+	"h":2.0,
+	"v" : 1.0,
+	"simulation" : ""
+    },
+    "net_config": {
+	"activation": "elu",
+        "num_hiddens_critic": [
+            300,
+	    300,
+	    304
+        ],
+        "lr_values_critic": [
+            0.001,
+            0.0005,
+	    0.0003
+
+        ],
+        "lr_boundaries_critic": [
+            9000,
+	    24000
+        ],
+        "num_iterations": 6000,
+        "batch_size": 256,
+        "valid_size": 256,
+        "logging_frequency": 200,
+        "dtype": "float64",
+        "verbose": true,
+        "transformation": "none"
+    },
+    "train_config": {
+	"pace": 4,
+        "TD_type": "TD1",
+        "control": 1
+    }
+}
