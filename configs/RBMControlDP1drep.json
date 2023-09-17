@@ -19,7 +19,7 @@
   },
   "net_config": {
     "activation": "elu",
-    "num_hiddens_critic": [400, 400, 401],
+    "num_hiddens_critic": [1000, 1000, 1000],
     "lr_values_critic": [0.0005, 0.0003, 0.0001],
     "lr_boundaries_critic": [9500, 22000],
     "num_iterations": 12000,

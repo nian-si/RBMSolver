@@ -18,7 +18,7 @@
     "net_config": {
         "activation": "elu",
         "num_hiddens_critic": [
-            48,
+            50,
 	    50,
 	    50,
 	    50
@@ -34,7 +34,7 @@
             6000
         ],
        
-        "num_iterations": 9000,
+        "num_iterations": 6000,
         "batch_size": 256,
         "logging_frequency": 200,
         "dtype": "float64",

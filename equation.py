@@ -261,7 +261,7 @@ class thinStream(Equation):
         w = w - tf.reduce_sum(max_zero_grad, 1, keepdims=True) * self.a  
         w = w - tf.reduce_sum((min_zero_grad), 1, keepdims=True) * a_lowbound
         
-        zero_grad = tf.math.minimum(tf.cast(0., tf.float64),grad_t ) 
+
         
         
         return w, 0
