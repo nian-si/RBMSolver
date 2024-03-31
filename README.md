@@ -5,8 +5,9 @@ requirement: Numpy and Tensorflow 2
 Usage:
 ```
 python3 main.py --config_path=configs/RBMControlDP1drep.json 
-*RBMControlDP1drep.json* can be replaced to other json file.
 ```
+*RBMControlDP1drep.json* can be replaced to other json file.
+
 After running once, the data will be automatically dumped. Then, one can use the following commend
 ```
 python3 main.py --config_path=configs/RBMControlDP1drep.json --dump=False
