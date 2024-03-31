@@ -233,7 +233,7 @@ class ControlSolver(object):
 
     @tf.function
     def train_step_critic(self, train_data):
-        grad = self.grad_critic(train_data, training=False, use_NN = True)
+        grad = self.grad_critic(train_data, training=True, use_NN = True)
         self.optimizer_critic.apply_gradients(zip(grad, self.model_critic.trainable_variables))
         
 

@@ -1,0 +1,48 @@
+{
+    "eqn_config": {
+        "_comment": "RBM Discount",
+        "eqn_name": "thinStream",
+	"queue_example": "1",
+        "total_time_critic": 0.1,
+        "dim": 21,
+        "num_time_interval_critic": 64,
+        "discount": 0.01,
+        "mu": -1.0,
+        "R": -0.05,
+        "rho": -0.0025,
+        "x0": 0.0,
+        "a": 2,
+        "h": 2.0,
+        "v": 1.0
+    },
+    "net_config": {
+        "activation": "elu",
+        "num_hiddens_critic": [
+            100,
+	    100,
+	    100
+        ],
+        "lr_values_critic": [
+            0.0005,
+	    0.0003,
+            0.0001
+           
+        ],
+        "lr_boundaries_critic": [
+            9000,
+            24000
+        ],
+       
+        "num_iterations": 9000,
+        "batch_size": 256,
+        "logging_frequency": 200,
+        "dtype": "float64",
+        "verbose": true,
+        "transformation": "none"
+    },
+    "train_config": {
+        "pace": 10,
+	"TD_type": "TD1",
+        "control": 1
+    }
+}
