@@ -15,11 +15,11 @@ class Equation(object):
         self.gamma = eqn_config.discount
         self.x0 = eqn_config.x0
         self.var = 1
-        if "var" in eqn_config:  #variance
+        if "var" in eqn_config:
             self.var = eqn_config.var
         self.rho = eqn_config.rho
         self.a = eqn_config.a
-        if np.abs(eqn_config.R)  < 1e-9 and np.abs(self.rho) < 1e-9:
+        if isinstance(eqn_config.R, list) is False and np.abs(eqn_config.R)  < 1e-9 and np.abs(self.rho) < 1e-9:
             self.rep_flag = True  
         else:
             self.rep_flag = False
@@ -126,7 +126,7 @@ class dynamicPricing(Equation):
         R = np.identity(self.dim)
         if "queue_example" not in eqn_config: 
             R[1:,0] = eqn_config.R
-        elif eqn_config.queue_example == "1":  # queue example 1 is used in paper.
+        elif eqn_config.queue_example == "1":
             R[1:,0] = eqn_config.R
             
         elif eqn_config.queue_example == "2":
@@ -137,11 +137,11 @@ class dynamicPricing(Equation):
       
 
         
-        if "cTrue" in eqn_config: # true value
+        if "cTrue" in eqn_config:
             self.cTrue = eqn_config.cTrue
-        if "constOptimal" in eqn_config:   #optimal value under constant drift
+        if "constOptimal" in eqn_config:
             self.constOpt = eqn_config.constOptimal
-        if "linearOptimal" in eqn_config:  #optimal value under linear drift
+        if "linearOptimal" in eqn_config:
             self.linearOpt = eqn_config.linearOptimal
         
         if self.rep_flag:
@@ -234,7 +234,9 @@ class thinStream(Equation):
         
         
         if self.rep_flag:
+            
             self.h = np.repeat(eqn_config.h,self.dim)
+            
         else:
             if "queue_example" not in eqn_config: 
                 self.h = np.repeat(eqn_config.h * 0.95,self.dim) 
@@ -247,7 +249,7 @@ class thinStream(Equation):
             elif eqn_config.queue_example == "2":
                 self.h = np.repeat(eqn_config.h,self.dim) 
                 self.h[0] = eqn_config.h * 0.95
-                
+        print(self.h)        
 
             
         
@@ -258,18 +260,29 @@ class thinStream(Equation):
         max_zero_grad = tf.math.maximum(tf.cast(0., tf.float64) , grad_t - self.v )
         min_zero_grad = tf.math.minimum(tf.cast(0., tf.float64) , grad_t - self.v )
 
-        w = w - tf.reduce_sum(max_zero_grad, 1, keepdims=True) * self.a  
+        w = w - tf.reduce_sum(max_zero_grad, 1, keepdims=True) * (self.a)
         w = w - tf.reduce_sum((min_zero_grad), 1, keepdims=True) * a_lowbound
-        
 
         
+
+
         
-        return w, 0
+        #zero_grad = tf.math.minimum(tf.cast(0., tf.float64),grad_t ) 
+        
+        
+        return w,  0
 
 
 
     def sigma(self): # x is num_sample x dim, u is num_sample x dim_u, sigma is num_sample x dim x dim_w
         mat1 = np.identity(self.dim)
+        if self.rho > 1.0:
+            for i in np.arange(1,self.dim):
+                for j in np.arange(1,self.dim):
+                    if i!=j:
+                        mat1[i,j] = -self.R[i,0] * self.R[j,0]
+            return np.linalg.cholesky(mat1)
+
         for i in np.arange(1,self.dim):
             for j in np.arange(1,self.dim):
                 if i!=j:
@@ -335,9 +348,59 @@ class thinStream(Equation):
         else:
             return 0
            
+class singularControl(Equation): 
+    def __init__(self, eqn_config):
+        super(singularControl, self).__init__(eqn_config)
+        self.name = 'singularControl'
+        self.R = np.identity(self.dim)
+        self.realmu = eqn_config.realmu
+        self.Delta1 = eqn_config.Delta1
+        self.Delta2 = eqn_config.Delta2
+        self.Delta = self.Delta1
+        self.h1 = tf.constant([-2 * self.Delta2, (1+ self.Delta2)], dtype = tf.float64)
+        self.h2 = tf.constant([2 * (1 + self.Delta1), -self.Delta1], dtype = tf.float64)
+        self.mu = np.repeat(eqn_config.mu,self.dim) 
+        print("Delta 1: %.2f, Delta 2: %.2f" % (self.Delta1, self.Delta2))
+        print("Real Mu -", self.realmu)
+    
+        
+    def w_tf(self, x, grad_t, a_lowbound  = 0): #num_sample * 1
+        condition = tf.greater_equal(x[:, 1], 2 * x[:, 0])
+        
+        
+        
+        w = tf.where(condition, tf.linalg.matvec(x,self.h1), tf.linalg.matvec(x,self.h2) )
+        w = w- tf.linalg.matvec(grad_t,self.mu + tf.constant(self.realmu,dtype = tf.float64))   #[1.0,1.0]
+
+        w = tf.reshape(w, [-1,1])
+        max_zero_grad = tf.math.maximum(tf.cast(0., tf.float64) , grad_t)
+        min_zero_grad = tf.math.minimum(tf.cast(0., tf.float64) , grad_t)
+        w = w + tf.reduce_sum(max_zero_grad, 1, keepdims=True) * a_lowbound  
+        w = w + tf.reduce_sum(min_zero_grad, 1, keepdims=True) * self.a
+        zero_grad = tf.math.minimum(tf.cast(0., tf.float64),tf.where(condition, grad_t[:,1], grad_t[:,0] ) )
+        return w, tf.reduce_sum(tf.square(zero_grad))
 
 
-class SRBM(Equation):  #no control only policy evaluation
+
+    def sigma(self): # x is num_sample x dim, u is num_sample x dim_u, sigma is num_sample x dim x dim_w
+
+        mat1 = np.array([[1,0.5],[0.5,2]])
+        return np.linalg.cholesky(mat1)
+ 
+    
+    def drift(self):
+        return self.mu
+    
+    def diffusion(self,  dw): #sigma num_sample x dim x dim_w, dw is num_sample x dim_w
+        return np.dot(self.sigma(), dw.transpose()).transpose() # num_sample x dim
+    
+    def const_control_optimal(self):
+        pass
+    
+    def linear_control_optimal(self):
+        pass
+
+class SRBM(Equation):
     def __init__(self, eqn_config):
         super(SRBM, self).__init__(eqn_config)
         
